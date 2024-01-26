@@ -71,47 +71,6 @@ apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: kaniko-task-ref
-spec:
-  params:
-    - name: IMAGE
-      description: Name (reference) of the image to build.
-      default: gokulc780/tekton-image:v1
-    - name: DOCKERFILE
-      description: Path to the Dockerfile to build.
-      default: ./Dockerfile
-    - name: CONTEXT
-      description: The build context used by Kaniko.
-      default: ./
-    - name: EXTRA_ARGS
-      type: array
-      default: []
-    - name: BUILDER_IMAGE
-      description: The image on which builds will run (default is v1.5.1)
-      default: gcr.io/kaniko-project/executor:debug
-  workspaces:
-    - name: task-ws
-      description: Workspace for sharing files between tasks
-  steps:
-    - name: kaniko-task
-      image: $(params.BUILDER_IMAGE)
-      workingDir: $(workspaces.task-ws.path)/kaniko-image-building3
-      env:
-        - name: DOCKER_CONFIG
-          value: docker-creds
-      securityContext:
-        runAsUser: 0
-      command:
-        - /kaniko/executor
-        - $(params.EXTRA_ARGS)
-        - --dockerfile=$(params.DOCKERFILE)
-        - --context=.  # The user does not need to care the workspace and the source.
-        - --destination=$(params.IMAGE)
-        - --oci-layout-path=$(workspaces.task-ws.path)/kaniko-image-building3/image-digest
----
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: kaniko
   labels:
     app.kubernetes.io/version: "0.6"
   annotations:
@@ -128,6 +87,7 @@ spec:
   params:
     - name: IMAGE
       description: Name (reference) of the image to build.
+      default: tekton-image:v1
     - name: DOCKERFILE
       description: Path to the Dockerfile to build.
       default: ./Dockerfile
@@ -141,7 +101,7 @@ spec:
       description: The image on which builds will run (default is v1.5.1)
       default: gcr.io/kaniko-project/executor:v1.5.1@sha256:c6166717f7fe0b7da44908c986137ecfeab21f31ec3992f6e128fff8a94be8a5
   workspaces:
-    - name: source
+    - name: task-ws
       description: Holds the context and Dockerfile
     - name: dockerconfig
       description: Includes a docker `config.json`
@@ -154,12 +114,12 @@ spec:
       description: URL of the image just built.
   steps:
     - name: build-and-push
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.task-ws.path)/kaniko-image-building3
       image: $(params.BUILDER_IMAGE)
       args:
         - $(params.EXTRA_ARGS)
         - --dockerfile=$(params.DOCKERFILE)
-        - --context=$(workspaces.source.path)/$(params.CONTEXT) # The user does not need to care the workspace and the source.
+        - --context=. # The user does not need to care the workspace and the source.
         - --destination=$(params.IMAGE)
         - --digest-file=$(results.IMAGE_DIGEST.path)
       # kaniko assumes it is running as root, which means this example fails on platforms
