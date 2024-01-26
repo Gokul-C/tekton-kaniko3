@@ -115,6 +115,9 @@ spec:
   steps:
     - name: build-and-push
       workingDir: $(workspaces.task-ws.path)/kaniko-image-building3
+      env:
+        - name: DOCKER_CONFIG
+          value: docker-creds
       image: $(params.BUILDER_IMAGE)
       args:
         - $(params.EXTRA_ARGS)
