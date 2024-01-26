@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: pipeline-gmsk-run
+  name: pipeline-gmsk3-run
 spec:
   workspaces:
     - name: pipeline-ws
